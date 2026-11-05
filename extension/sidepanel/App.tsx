@@ -18,6 +18,7 @@ import { EditSquareIcon } from './components/Icons.js';
 import { useActiveTabId } from './hooks/useActiveTabId.js';
 import { useActiveTabTools } from './hooks/useActiveTabTools.js';
 import { useAgentSession } from './hooks/useAgentSession.js';
+import { startLocalAgentBridge } from './connect/mcpBridge.js';
 import { type ContextUsage, isPromptApiSupported, prepareOnDeviceModel } from './services/promptApiBackend.js';
 
 /** Starts the on-device model download; a failure only means it starts later, with the first message. */
@@ -104,6 +105,8 @@ export function App() {
       void startOnDeviceModelDownload();
     }
   };
+
+  useEffect(startLocalAgentBridge, []);
 
   const chatStreamEndRef = useRef<HTMLDivElement | null>(null);
 

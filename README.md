@@ -20,6 +20,7 @@ how WebMCP tools work on your site.
 - **Streams replies** as they are written, on both backends.
 - **One conversation per tab.** Each tab has its own chat and permission prompts. Switching tabs switches chats, and closing a tab ends its chat.
 - **Log dashboard** for looking at every request the server handles. See [Log dashboard](#log-dashboard).
+- **Local agents and your own API key.** Reach page tools from any MCP client, or chat with any OpenAI-compatible provider straight from the browser. See [docs/local-agent.md](docs/local-agent.md).
 
 <table>
   <tr>

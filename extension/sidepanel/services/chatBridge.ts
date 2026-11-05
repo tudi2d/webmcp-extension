@@ -4,6 +4,7 @@
  */
 
 import { postToBackend, streamChat } from './backendBridge.js';
+import { endApiKeyChat, isApiKeyBackendOn, sendApiKeyChat } from '../connect/apiKeyBackend.js';
 import { getSpotlightFence, resetOnDeviceChat, sendOnDeviceChat } from './promptApiBackend.js';
 import { type ChatTurnRequest, type ChatTurnResponse } from '../types/index.js';
 
@@ -37,6 +38,7 @@ export async function sendChatTurn(
       { signal, onText, stopOnToolCall }
     );
   }
+  if (isApiKeyBackendOn()) return sendApiKeyChat(request, { signal, onText });
   return streamChat('/api/chat', request, { signal, onText });
 }
 
@@ -56,6 +58,8 @@ export function getSpotlighting(onDevice = false): string | undefined {
 export function endChat(chatId: string, { onDevice = false }: { onDevice?: boolean } = {}): void {
   if (onDevice) {
     resetOnDeviceChat(chatId);
+  } else if (isApiKeyBackendOn()) {
+    endApiKeyChat(chatId);
   } else {
     void postToBackend('/api/chat/reset', { chatId }).catch(() => {});
   }
@@ -65,6 +69,8 @@ export function endChat(chatId: string, { onDevice = false }: { onDevice?: boole
 export function endAllChats({ onDevice = false }: { onDevice?: boolean } = {}): void {
   if (onDevice) {
     resetOnDeviceChat();
+  } else if (isApiKeyBackendOn()) {
+    endApiKeyChat();
   } else {
     void postToBackend('/api/chat/reset', {}).catch(() => {});
   }

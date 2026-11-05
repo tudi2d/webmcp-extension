@@ -6,6 +6,7 @@
 import { useId } from 'react';
 import { CloseIcon, DeviceIcon, ShieldIcon } from '../components/Icons.js';
 import { Switch } from '../components/Switch.js';
+import { ApiKeySetting, LocalAgentSection } from '../connect/ConnectSettings.js';
 
 export interface SettingsScreenProps {
   sensitiveActionAlerts: boolean;
@@ -109,7 +110,11 @@ export function SettingsScreen({
               />
             </div>
           </div>
+
+          <ApiKeySetting onDeviceModel={onDeviceModel} responseInProgress={responseInProgress} />
         </div>
+
+        <LocalAgentSection />
       </div>
     </div>
   );

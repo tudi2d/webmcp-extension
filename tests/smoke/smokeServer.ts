@@ -5,6 +5,8 @@
 
 import http from 'node:http';
 
+import { createMcpBridge } from '../../server/mcp.ts';
+
 /** A WebMCP tool registered by `/test-page`, as the side panel should list it. */
 export interface TestPageTool {
   name: string;
@@ -76,6 +78,8 @@ export interface SmokeServer {
   baseUrl: string;
   /** Same handler on another port, so pages loaded from it are cross-origin to `baseUrl`. */
   frameBaseUrl: string;
+  /** The real MCP bridge, which the side panel connects to here as it does to the server. */
+  mcp: ReturnType<typeof createMcpBridge>;
   chatRequests: ChatRequestBody[];
   resetRequests: ResetRequestBody[];
   enqueueReplies: (...replies: ChatTurnReply[]) => void;
@@ -278,6 +282,7 @@ export async function startSmokeServer(authToken: string): Promise<SmokeServer> 
   const resetRequests: ResetRequestBody[] = [];
   const replyQueue: ChatTurnReply[] = [];
   const resetListeners: Array<() => void> = [];
+  const mcp = createMcpBridge();
 
   let frameBaseUrl = '';
   const handler: http.RequestListener = (req, res) => {
@@ -301,6 +306,22 @@ export async function startSmokeServer(authToken: string): Promise<SmokeServer> 
     if (page) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(page());
+      return;
+    }
+
+    if (req.method === 'POST' && req.url === '/api/mcp/bridge') {
+      mcp.attachPanel(res);
+      return;
+    }
+
+    if (req.method === 'POST' && req.url === '/api/mcp/result') {
+      const chunks: Buffer[] = [];
+      req.on('data', (chunk: Buffer) => chunks.push(chunk));
+      req.on('end', () => {
+        mcp.settle(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end('{}');
+      });
       return;
     }
 
@@ -397,6 +418,7 @@ export async function startSmokeServer(authToken: string): Promise<SmokeServer> 
   return {
     baseUrl,
     frameBaseUrl,
+    mcp,
     chatRequests,
     resetRequests,
     enqueueReplies: (...replies: ChatTurnReply[]) => {

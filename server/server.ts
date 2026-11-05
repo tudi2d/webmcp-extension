@@ -13,6 +13,7 @@ import { streamText } from 'ai';
 import type { ModelMessage } from 'ai';
 
 import { buildSystemInstruction } from '../shared/systemPrompt.ts';
+import { createMcpBridge, refuseMcpRequest } from './mcp.ts';
 import { describeModel, loadProviders } from './providers.ts';
 import { appendTurnMessages, buildTools, hasPendingToolCalls } from './tools.ts';
 import type { ToolDeclaration, ToolResponse } from './tools.ts';
@@ -49,6 +50,8 @@ if (providerConfig.problem) {
 } else {
   console.log(`🤖 Answering with ${activeModel}`);
 }
+
+const mcp = createMcpBridge();
 
 const MAX_CHAT_SESSIONS = 100;
 /**
@@ -517,6 +520,46 @@ const server = http.createServer(async (req, res) => {
             error: 'Something went wrong while processing your request. The error details have been logged.',
           })}\n`
         );
+      }
+      return;
+    }
+
+    if (url.pathname === '/api/mcp/bridge' && req.method === 'POST') {
+      mcp.attachPanel(res);
+      return;
+    }
+
+    if (url.pathname === '/api/mcp/result' && req.method === 'POST') {
+      mcp.settle(await parseJsonBody(req));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true }));
+      return;
+    }
+
+    if (url.pathname === '/mcp') {
+      const refused = refuseMcpRequest(req.method, req.headers, authToken);
+      if (refused) {
+        console.warn(`  🚫 Refused MCP request: ${refused.error}`);
+        res.writeHead(refused.status, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: refused.error }));
+        return;
+      }
+      const message = await parseJsonBody(req);
+      const reply = await mcp.handle(message);
+      recordServerLog({
+        method: req.method,
+        path: url.pathname,
+        statusCode: reply ? 200 : 202,
+        startTime,
+        requestPayload: message,
+        responsePayload: reply,
+      });
+      if (reply) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(reply));
+      } else {
+        res.writeHead(202);
+        res.end();
       }
       return;
     }

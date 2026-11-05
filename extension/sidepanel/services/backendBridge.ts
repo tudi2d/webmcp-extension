@@ -10,14 +10,14 @@ import { UserFacingError, type ChatTurnResponse } from '../types/index.js';
  * At build time, esbuild statically replaces `process.env.WEBMCP_SERVER_URL`
  * with a literal derived from PORT in .env, so a non-default port still works.
  */
-const SERVER_URL = process.env.WEBMCP_SERVER_URL || 'http://localhost:3000';
+export const SERVER_URL = process.env.WEBMCP_SERVER_URL || 'http://localhost:3000';
 
 /**
  * Retrieves the active WebMCP auth token.
  * At build time, esbuild statically replaces `process.env.WEBMCP_AUTH_TOKEN`
  * with the string literal token from .env.
  */
-function getAuthToken(): string {
+export function getAuthToken(): string {
   return process.env.WEBMCP_AUTH_TOKEN || '';
 }
 
@@ -108,7 +108,7 @@ export function formatErrorMessage(input: unknown): string {
 }
 
 /** The headers every request to the backend server carries. */
-function buildHeaders(): Headers {
+export function buildHeaders(): Headers {
   const headers = new Headers({ 'Content-Type': 'application/json' });
   const token = getAuthToken();
   if (token) headers.set('X-WebMCP-Auth', token);
